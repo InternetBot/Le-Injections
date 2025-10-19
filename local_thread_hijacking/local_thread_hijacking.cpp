@@ -2,13 +2,19 @@
 // hasn't been test but the concept is there 
 // what to wrap it up before testing and debugging
 
+
+// well if you are a stalker and looked at my previous psuh and were wondering
+// wtf was i cooking 
+// tbh idk i literally just realized i kept mixing up local thread hijacking and remote thread hijacking
+// so yeah this is local thread hijacking now
+
 #include <iostream>
-#include "thread_hijacking.h"
+#include "local_thread_hijacking.h"
 
 
 //same process nothing fancy check classic_injection.cpp for comments 
 
-void thread_hijacking(const unsigned char* shellcode, size_t shellcode_size, DWORD pid){
+void local_thread_hijacking(const unsigned char* shellcode, size_t shellcode_size){
 
     // there are two ways to do this 
     // either byn virtualallocex or virtalalloc 
