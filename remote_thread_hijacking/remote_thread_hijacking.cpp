@@ -50,9 +50,13 @@ void remote_thread_hijacking(const unsigned char* shellcode, size_t shellcode_si
         &Pi // pointer to PROCESS_INFORMATION structure
     );
 
+    // from the PI we created we can extract the basics we need like handle and pid
     auto hProcess = Pi.hProcess;
+    DWORD ProcessId = Pi.dwProcessId;
+    auto hThread = Pi.hThread;
+    DWORD ThreadId = Pi.dwThreadId;
 
-    
+
     // // allocate memory in the target process
     // auto hMemory = VirtualAllocEx(
     //     hProcess,
